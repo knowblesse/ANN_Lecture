@@ -93,85 +93,9 @@ X_test_std = clf_std.transform(X_test)
 # X_train_std, X_test_std
 
 ### Implement Logistic regression
-class LogisticRegressionGD1(object):
-    """Logistic Regression Classifier using gradient descent.
-
-    Parameters
-    ------------
-    eta : float
-      Learning rate (between 0.0 and 1.0)
-    n_iter : int
-      Passes over the training dataset.
-    random_state : int
-      Random number generator seed for random weight
-      initialization.
-
-
-    Attributes
-    -----------
-    w_ : 1d-array
-      Weights after fitting.
-    cost_ : list
-      Sum-of-squares cost function value in each epoch.
-
-    """
-
-    def __init__(self, eta=0.05, n_iter=100, random_state=1, batch_size=-1):
-        self.eta = eta
-        self.n_iter = n_iter
-        self.random_state = random_state
-        self.batch_size = batch_size
-
-    def fit(self, X, y):
-        """ Fit training data.
-
-        Parameters
-        ----------
-        X : {array-like}, shape = [n_samples, n_features]
-          Training vectors, where n_samples is the number of samples and
-          n_features is the number of features.
-        y : array-like, shape = [n_samples]
-          Target values.
-
-        Returns
-        -------
-        self : object
-
-        """
-        rgen = np.random.RandomState(self.random_state)
-        self.w_ = rgen.normal(loc=0.0, scale=0.01, size=1 + X.shape[1])
-        self.cost_ = []
-
-        for i in range(self.n_iter):
-            net_input = self.net_input(X)
-            output = self.activation(net_input)
-            errors = (y - output)
-            self.w_[1:] += self.eta * X.T.dot(errors)
-            self.w_[0] += self.eta * errors.sum()
-
-            # note that we compute the logistic `cost` now
-            # instead of the sum of squared errors cost
-            cost = -y.dot(np.log(output)) - ((1 - y).dot(np.log(1 - output)))
-            self.cost_.append(cost)
-        return self
-
-    def net_input(self, X):
-        """Calculate net input"""
-        return np.dot(X, self.w_[1:]) + self.w_[0]
-
-    def activation(self, z):
-        """Compute logistic sigmoid activation"""
-        return 1. / (1. + np.exp(-np.clip(z, -250, 250)))
-
-    def predict(self, X):
-        """Return class label after unit step"""
-        return np.where(self.net_input(X) >= 0.0, 1, 0)
-        # equivalent to:
-        # return np.where(self.activation(self.net_input(X)) >= 0.5, 1, 0)
-
 class LogisticRegressionGD(object):
     """Logistic Regression Classifier using gradient descent.
-    강의자료 그대로 들고옴.
+    강의자료를 그대로 들고와서 .
 
     Parameters
     ------------
@@ -201,7 +125,15 @@ class LogisticRegressionGD(object):
 
     def fit(self, X, y):
         """ Fit training data.
-
+        batch size를 기준으로 입력된 X 값을 batch size로 나눠서 학습을 시킴.
+        X 사이즈가 batch size로 딱 나누어 떨어지지 않는 경우,
+         맨 마지막 남는 데이터는 batch size 보다 크기가 작아도 그대로 학습을 진행.
+         ex) X.shape[0] = 150, batch_size = 100
+         epoch1-1 : X[0:100]
+         epoch1-2 : X[100:150]
+         epoch2-1 : X[0:100]
+         epoch2-2 : X[100:150]
+       대신 batch size로 -1을 넣는 경우 그냥 batch Gradient Descent 방식을 사용.
         Parameters
         ----------
         X : {array-like}, shape = [n_samples, n_features]
@@ -299,20 +231,46 @@ class LogisticRegressionGD_3C(object):
             result[:,c] = self.clf[c].net_input(X) # predict를 바로 하는 것이 아니라 net_input 값만 받아둠.
         return np.argmax(result, axis=1)
 
+eta_set = [0.1, 0.01, 0.001, 0.0001]
+batch_set = [1,2,4,8,16,32,120]
 
-clf = LogisticRegressionGD_3C(random_state=3,batch_size=2)
-clf.fit(X,y)
-fig1, ax = plt.subplots()
-plot_decision_regions(X,y,clf,ax)
+output = pd.DataFrame(np.zeros([4,7]))
 
-clf1 = LogisticRegressionGD_3C(random_state=3,batch_size=-1)
-clf1.fit(X,y)
-fig2, ax = plt.subplots()
-plot_decision_regions(X,y,clf1,ax)
+fig1, ax = plt.subplots(4,7)
+for it in range(10):
+    print(str(it))
+    ## Training Set / Testing Set 분리.
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=None, stratify=y)
+    for ie, e in enumerate(eta_set):
+        for ib, b in enumerate(batch_set):
+            clf = LogisticRegressionGD_3C(random_state=None, eta=e, batch_size=b)
+            clf.fit(X_train,y_train)
+            #plot_decision_regions(X,y,clf,ax[ie,ib])
+            output[ib][ie] +=  accuracy_score(y_test,clf.predict(X_test))
+            print(str(e) + '  ' + str(b))
 
-fig3, ax = plt.subplots()
-from sklearn.linear_model import LogisticRegression
-clf2 = LogisticRegression(C=100)
-clf2.fit(X,y)
-plot_decision_regions(X,y,clf2,ax)
-plt.show()
+plt.matshow(output/10)
+plt.colorbar()
+print(output/10)
+
+
+#
+#
+#
+# clf = LogisticRegressionGD_3C(random_state=3,batch_size=2)
+# clf.fit(X,y)
+# fig1, ax = plt.subplots()
+# plot_decision_regions(X,y,clf,ax)
+#
+# clf1 = LogisticRegressionGD_3C(random_state=3,batch_size=-1)
+# clf1.fit(X,y)
+# fig2, ax = plt.subplots()
+# plot_decision_regions(X,y,clf1,ax)
+#
+# fig3, ax = plt.subplots()
+# from sklearn.linear_model import LogisticRegression
+# clf2 = LogisticRegression(C=100)
+# clf2.fit(X,y)
+# plot_decision_regions(X,y,clf2,ax)
+# plt.show()
+
