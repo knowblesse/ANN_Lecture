@@ -10,9 +10,6 @@ from sklearn.preprocessing import Normalizer, StandardScaler
 
 #Constants for Data Import
 NUM_FEATURE = 4 # Number of Features in each sample
-NUM_SAMPLE_PER_CLASS = 50
-NUM_CLASS = 3
-NUM_TEST_SAMPLE_PER_CLASS = 10
 
 #Dataset Download
 df = pd.read_csv('https://archive.ics.uci.edu/ml/machine-learning-databases/iris/iris.data',header=None)
@@ -31,9 +28,6 @@ y = dataset[:,NUM_FEATURE].astype(int)
 print('[System] Data import success')
 
 def plot_decision_regions(X, y, classifier, ax, graph_margin = 1, test_idx=None, resolution=0.02):
-    # 지정한 axis 에 plot을 하도록 ax 변수를 따로 받음.
-    # graph_margin 값은 아름답게 ploting을 하기 위해서 min, max 값에 얼마만큼 여백을 줄지 결정.
-    #   원래 코드에서는 무조건 +-1로 설정이 되어 있었음.
     # setup marker generator and color map
     markers = ('s', 'x', 'o', '^', 'v')
     colors = ('red', 'blue', 'lightgreen', 'gray', 'cyan')
@@ -96,7 +90,6 @@ X_test_std = clf_std.transform(X_test)
 ### Implement Logistic regression
 class LogisticRegressionGD(object):
     """Logistic Regression Classifier using gradient descent.
-    강의자료를 그대로 들고와서 .
 
     Parameters
     ------------
@@ -232,27 +225,27 @@ class LogisticRegressionGD_3C(object):
             result[:,c] = self.clf[c].net_input(X) # predict를 바로 하는 것이 아니라 net_input 값만 받아둠.
         return np.argmax(result, axis=1)
 
-eta_set = [0.1, 0.01, 0.001, 0.0001]
-batch_set = [1,2,4,8,16,32,120]
-
-output = pd.DataFrame(np.zeros([4,7]))
-
-fig1, ax = plt.subplots(4,7)
-for it in range(10):
-    print(str(it))
-    ## Training Set / Testing Set 분리.
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=None, stratify=y)
-    for ie, e in enumerate(eta_set):
-        for ib, b in enumerate(batch_set):
-            clf = LogisticRegressionGD_3C(random_state=None, eta=e, batch_size=b)
-            clf.fit(X_train,y_train)
-            #plot_decision_regions(X,y,clf,ax[ie,ib])
-            output[ib][ie] +=  accuracy_score(y_test,clf.predict(X_test))
-            print(str(e) + '  ' + str(b))
-
-plt.matshow(output/10)
-plt.colorbar()
-print(output/10)
+# eta_set = [0.1, 0.01, 0.001, 0.0001]
+# batch_set = [1,2,4,8,16,32,120]
+#
+# output = pd.DataFrame(np.zeros([4,7]))
+#
+# fig1, ax = plt.subplots(4,7)
+# for it in range(10):
+#     print('iteration :' + str(it))
+#     ## Training Set / Testing Set 분리.
+#     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=None, stratify=y)
+#     for ie, e in enumerate(eta_set):
+#         for ib, b in enumerate(batch_set):
+#             clf = LogisticRegressionGD_3C(random_state=None, eta=e, batch_size=b)
+#             clf.fit(X_train,y_train)
+#             #plot_decision_regions(X,y,clf,ax[ie,ib])
+#             output[ib][ie] +=  accuracy_score(y_test,clf.predict(X_test))
+#             print('eta = ' + str(e) + ' batch size = ' + str(b))
+#
+# plt.matshow(output/10)
+# plt.colorbar()
+# print(output/10)
 
 
 #
