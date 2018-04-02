@@ -4,8 +4,6 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
-
-# Feature Scaling 을 위한 package
 from sklearn.preprocessing import Normalizer, StandardScaler
 
 ### Pandas로 데이터 불러오기.
@@ -32,14 +30,17 @@ y = dataset[:,NUM_FEATURE].astype(int)
 
 print('[System] Data import success')
 
-def plot_decision_regions(X, y, classifier, ax, test_idx=None, resolution=0.02):
+def plot_decision_regions(X, y, classifier, ax, graph_margin = 1, test_idx=None, resolution=0.02):
+    # 지정한 axis 에 plot을 하도록 ax 변수를 따로 받음.
+    # graph_margin 값은 아름답게 ploting을 하기 위해서 min, max 값에 얼마만큼 여백을 줄지 결정.
+    #   원래 코드에서는 무조건 +-1로 설정이 되어 있었음.
     # setup marker generator and color map
     markers = ('s', 'x', 'o', '^', 'v')
     colors = ('red', 'blue', 'lightgreen', 'gray', 'cyan')
     cmap = ListedColormap(colors[:len(np.unique(y))])
     # plot the decision surface
-    x1_min, x1_max = X[:, 0].min() - 1, X[:, 0].max() + 1
-    x2_min, x2_max = X[:, 1].min() - 1, X[:, 1].max() + 1
+    x1_min, x1_max = X[:, 0].min() - graph_margin, X[:, 0].max() + graph_margin
+    x2_min, x2_max = X[:, 1].min() - graph_margin, X[:, 1].max() + graph_margin
     xx1, xx2 = np.meshgrid(np.arange(x1_min, x1_max, resolution),
                            np.arange(x2_min, x2_max, resolution))
     Z = classifier.predict(np.array([xx1.ravel(), xx2.ravel()]).T)
