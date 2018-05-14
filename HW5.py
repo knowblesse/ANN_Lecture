@@ -164,6 +164,38 @@ cubic = PolynomialFeatures(degree=3)
 scores = np.zeros([13,1])
 
 # Figure for scatter plot & decision line
+fig = plt.figure(figsize=(15,20))
+fig.patch.set_facecolor('lightcyan')
+fig.suptitle('Polinomial Regression')
+ax = fig.subplots(7,2)
+
+# Draw plots
+for row in range(7):
+    for col in range(2):
+        idx = 2*row + col
+        if idx != 13: # 전체 subplot의 수는 14개. 마지막 것은 비워두어야 함.
+            # Standardize the X
+            X = dataset[:, idx].reshape(-1,1)
+            # Make Cubic Terms
+            X_cubic = cubic.fit_transform(X)
+            sc_x = StandardScaler()
+            X_std = sc_x.fit_transform(X_cubic)
+            # Do the regression
+            lr = LinearRegression()
+            lr.fit(X_std, y_std)
+            # Plot
+            # X 데이터가 순차적으로 되어 있지 않기에 plot 함수를 그대로 사용하면 거미줄이 연성된다.
+            # 고로, argsort 함수로 X 값을 순차적으로 정렬한 뒤, 이 정렬기준을 그대로 적용해서 y_std 값을 feed 해주면 제대로 그려짐.
+            singleX = sc_x.fit_transform(X)
+            order = np.argsort(singleX, 0).T[0]
+            ax[row,col].scatter(singleX, y_std, c='steelblue', marker='.', edgecolor='white', s=70)
+            ax[row,col].plot(singleX[order], lr.predict(X_std)[order], color='black', lw=2)
+            ax[row,col].set_title(df.columns[idx])
+
+
+
+
+# Figure for scatter plot & decision line
 fig = plt.figure(figsize=(10,20))
 fig.patch.set_facecolor('lightcyan')
 fig.suptitle('Polynomial(Cubic) Linear Regression')
