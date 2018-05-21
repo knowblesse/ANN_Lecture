@@ -160,10 +160,6 @@ class FCM(object):
         datasize = np.shape(X)[0]
         datadimension = np.shape(X)[1]
 
-        ######
-        fuzzy_coef_m = self.fuzzy_coef_m
-
-
         # 총 n_init 번 돌려야 함.
         centroidset = np.zeros([self.n_init,self.n_clusters,datadimension])
         errorscore = np.zeros(self.n_init)
@@ -189,13 +185,16 @@ class FCM(object):
                 labels = labels ** -1
 
                 # meandistance가 tolerance보다 작으면 관두고
-                meandistance = np.mean(np.min(distances,1))
+                meandistance = np.mean(np.mean(distances,1))
                 if  meandistance< self.tol:
                     break
                 # 여전히 크면 새로운 라벨을 기반으로 새로운 centroid를 선택함.
                 else:
                     for i in range(self.n_clusters):
-                        centroid[i,:] = ( np.sum(X[:,i] * labels[:,i]) )  / np.sum(labels[:,i])
+                        # centroid[i,:] = np.sum(
+                        #     X * np.tile((labels[:,i]**self.fuzzy_coef_m).reshape([-1,1]),[1,datadimension])
+                        #     )  / np.sum((labels[:,i]**self.fuzzy_coef_m))
+                        centroid[i, :] = np.sum(X * np.tile((labels[:, i]).reshape([-1, 1]), [1, datadimension]),0) / np.sum((labels[:, i]))
             # 다 돌린뒤 centroid 와 score를 저장.
             centroidset[iterations,:,:] = centroid
             errorscore[iterations] = meandistance
@@ -294,7 +293,7 @@ class FCM(object):
 #
 
 
-fcm = FCM(init='k-means++',random_state=10,fuzzy_coef_m=3,tol=1e-10)
+fcm = FCM(init='k-means++',random_state=10,fuzzy_coef_m=2,tol=1e-10)
 print('done')
 labels = fcm.fit_predict(X)
 plt.scatter(X[labels[:,0]>0.4,0],X[labels[:,0]>0.4,1],c='r')
