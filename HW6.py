@@ -4,6 +4,8 @@ import matplotlib.pyplot as plt
 from sklearn.preprocessing import StandardScaler
 
 
+
+
 ## Load Iris Data set
 NUM_FEATURE = 4 # Number of Features in each sample
 
@@ -313,3 +315,5 @@ plt.ylabel('Distortion')
 plt.tight_layout()
 #plt.savefig('images/11_03.png', dpi=300)
 plt.show()
+
+np.remainder(7,3)
