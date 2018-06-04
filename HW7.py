@@ -401,21 +401,21 @@ plt.show()
 #
 #
 #
-# miscl_img = X_test[y_test != y_test_pred][:25]
-# correct_lab = y_test[y_test != y_test_pred][:25]
-# miscl_lab = y_test_pred[y_test != y_test_pred][:25]
-#
-# fig, ax = plt.subplots(nrows=5, ncols=5, sharex=True, sharey=True,)
-# ax = ax.flatten()
-# for i in range(25):
-#     img = miscl_img[i].reshape(28, 28)
-#     ax[i].imshow(img, cmap='Greys', interpolation='nearest')
-#     ax[i].set_title('%d) t: %d p: %d' % (i+1, correct_lab[i], miscl_lab[i]))
-#
-# ax[0].set_xticks([])
-# ax[0].set_yticks([])
-# plt.tight_layout()
-# #plt.savefig('images/12_09.png', dpi=300)
-# plt.show()
+miscl_img = X_test[y_test != y_test_pred][:25]
+correct_lab = y_test[y_test != y_test_pred][:25]
+miscl_lab = y_test_pred[y_test != y_test_pred][:25]
+
+fig, ax = plt.subplots(nrows=5, ncols=5, sharex=True, sharey=True,)
+ax = ax.flatten()
+for i in range(25):
+    img = miscl_img[i].reshape(28, 28)
+    ax[i].imshow(img, cmap='Greys', interpolation='nearest')
+    ax[i].set_title('%d) t: %d p: %d' % (i+1, correct_lab[i], miscl_lab[i]))
+
+ax[0].set_xticks([])
+ax[0].set_yticks([])
+plt.tight_layout()
+#plt.savefig('images/12_09.png', dpi=300)
+plt.show()
 #
 #
