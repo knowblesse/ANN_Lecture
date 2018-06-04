@@ -205,7 +205,7 @@ class NeuralNetMLP(object):
         y_pred = np.argmax(z_out, axis=1)
         return y_pred
 
-    def fit(self, X_train, y_train, X_valid, y_valid):
+    def fit(self, X_train, y_train, X_valid, y_valid, X_test, y_test):
         """ Learn weights from training data.
 
         Parameters
@@ -242,9 +242,11 @@ class NeuralNetMLP(object):
                                         size=(self.n_hidden, n_output))
 
         epoch_strlen = len(str(self.epochs))  # for progress formatting
-        self.eval_ = {'cost': [], 'train_acc': [], 'valid_acc': []}
+        self.eval_ = {'cost_train': [], 'cost_valid': [], 'cost_test': [], 'train_acc': [], 'valid_acc': [], 'test_acc': []}
 
         y_train_enc = self._onehot(y_train, n_output)
+        y_valid_enc = self._onehot(y_valid, n_output) ### added ###
+        y_test_enc = self._onehot(y_test, n_output)  ### added ###
 
         # iterate over training epochs
         for i in range(self.epochs):
@@ -303,42 +305,44 @@ class NeuralNetMLP(object):
             #############
 
             # Evaluation after each epoch during training
-            z_h, a_h, z_out, a_out = self._forward(X_train)
+            z_h, a_h, z_out, a_out_train = self._forward(X_train)
+            z_h, a_h, z_out, a_out_valid = self._forward(X_valid)
+            z_h, a_h, z_out, a_out_test = self._forward(X_test)
 
-            cost = self._compute_cost(y_enc=y_train_enc,
-                                      output=a_out)
+            cost_train = self._compute_cost(y_enc=y_train_enc, output=a_out_train)
+            cost_valid = self._compute_cost(y_enc=y_valid_enc, output=a_out_valid)
+            cost_test = self._compute_cost(y_enc=y_test_enc, output=a_out_test)
 
             y_train_pred = self.predict(X_train)
             y_valid_pred = self.predict(X_valid)
+            y_test_pred = self.predict(X_test)
 
             train_acc = ((np.sum(y_train == y_train_pred)).astype(np.float) /
                          X_train.shape[0])
             valid_acc = ((np.sum(y_valid == y_valid_pred)).astype(np.float) /
                          X_valid.shape[0])
+            test_acc = ((np.sum(y_test == y_test_pred)).astype(np.float) /
+                         X_test.shape[0])
 
             sys.stderr.write('\r%0*d/%d | Cost: %.2f '
                              '| Train/Valid Acc.: %.2f%%/%.2f%% ' %
-                             (epoch_strlen, i + 1, self.epochs, cost,
+                             (epoch_strlen, i + 1, self.epochs, cost_train,
                               train_acc * 100, valid_acc * 100))
             sys.stderr.flush()
 
-            self.eval_['cost'].append(cost)
+            self.eval_['cost_train'].append(cost_train)
+            self.eval_['cost_valid'].append(cost_valid)
+            self.eval_['cost_test'].append(cost_test)
             self.eval_['train_acc'].append(train_acc)
             self.eval_['valid_acc'].append(valid_acc)
+            self.eval_['test_acc'].append(test_acc)
 
         return self
 
 
 
 
-
-
-
-
-
-
-
-n_epochs = 200
+n_epochs = 20
 
 
 
@@ -359,59 +363,59 @@ nn = NeuralNetMLP(n_hidden=100,
                   shuffle=True,
                   seed=1)
 
-nn.fit(X_train=X_train[:55000],
-       y_train=y_train[:55000],
-       X_valid=X_train[55000:],
-       y_valid=y_train[55000:])
+nn.fit(X_train=X_train,
+       y_train=y_train,
+       X_valid=X_valid,
+       y_valid=y_valid,
+       X_test=X_test,
+       y_test = y_test)
 
 
-
-plt.plot(range(nn.epochs), nn.eval_['cost'])
+plt.subplot(1,2,1)
+plt.plot(range(nn.epochs), nn.eval_['cost_train'], label='training')
+plt.plot(range(nn.epochs), nn.eval_['cost_valid'], label='validation')
+plt.plot(range(nn.epochs), nn.eval_['cost_test'], label='testing')
 plt.ylabel('Cost')
 plt.xlabel('Epochs')
-#plt.savefig('images/12_07.png', dpi=300)
-plt.show()
+plt.legend()
 
+plt.subplot(1,2,2)
 
-
-
-plt.plot(range(nn.epochs), nn.eval_['train_acc'],
-         label='training')
-plt.plot(range(nn.epochs), nn.eval_['valid_acc'],
-         label='validation', linestyle='--')
+plt.plot(range(nn.epochs), nn.eval_['train_acc'], label='training')
+plt.plot(range(nn.epochs), nn.eval_['valid_acc'], label='validation')
+plt.plot(range(nn.epochs), nn.eval_['test_acc'], label='testing')
 plt.ylabel('Accuracy')
 plt.xlabel('Epochs')
 plt.legend()
-#plt.savefig('images/12_08.png', dpi=300)
 plt.show()
 
 
 
-
-y_test_pred = nn.predict(X_test)
-acc = (np.sum(y_test == y_test_pred)
-       .astype(np.float) / X_test.shape[0])
-
-print('Test accuracy: %.2f%%' % (acc * 100))
-
-
-
-
-miscl_img = X_test[y_test != y_test_pred][:25]
-correct_lab = y_test[y_test != y_test_pred][:25]
-miscl_lab = y_test_pred[y_test != y_test_pred][:25]
-
-fig, ax = plt.subplots(nrows=5, ncols=5, sharex=True, sharey=True,)
-ax = ax.flatten()
-for i in range(25):
-    img = miscl_img[i].reshape(28, 28)
-    ax[i].imshow(img, cmap='Greys', interpolation='nearest')
-    ax[i].set_title('%d) t: %d p: %d' % (i+1, correct_lab[i], miscl_lab[i]))
-
-ax[0].set_xticks([])
-ax[0].set_yticks([])
-plt.tight_layout()
-#plt.savefig('images/12_09.png', dpi=300)
-plt.show()
-
-
+#
+# y_test_pred = nn.predict(X_test)
+# acc = (np.sum(y_test == y_test_pred)
+#        .astype(np.float) / X_test.shape[0])
+#
+# print('Test accuracy: %.2f%%' % (acc * 100))
+#
+#
+#
+#
+# miscl_img = X_test[y_test != y_test_pred][:25]
+# correct_lab = y_test[y_test != y_test_pred][:25]
+# miscl_lab = y_test_pred[y_test != y_test_pred][:25]
+#
+# fig, ax = plt.subplots(nrows=5, ncols=5, sharex=True, sharey=True,)
+# ax = ax.flatten()
+# for i in range(25):
+#     img = miscl_img[i].reshape(28, 28)
+#     ax[i].imshow(img, cmap='Greys', interpolation='nearest')
+#     ax[i].set_title('%d) t: %d p: %d' % (i+1, correct_lab[i], miscl_lab[i]))
+#
+# ax[0].set_xticks([])
+# ax[0].set_yticks([])
+# plt.tight_layout()
+# #plt.savefig('images/12_09.png', dpi=300)
+# plt.show()
+#
+#
