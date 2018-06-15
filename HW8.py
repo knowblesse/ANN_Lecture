@@ -279,12 +279,19 @@ def load(saver, sess, path, epoch):
         path, 'cnn-model.ckpt-%d' % epoch))
 
 
-def train(sess, training_set, validation_set=None,
+def train(sess, training_set, validation_set=None, testing_set = None,
           initialize=True, epochs=20, shuffle=True,
           dropout=0.5, batch_size=64, random_seed=None):
     X_data = np.array(training_set[0])
     y_data = np.array(training_set[1])
+
     training_loss = []
+    validation_loss = []
+    testing_loss = []
+
+    training_acc = []
+    validation_acc = []
+    testing_acc = []
 
     ## initialize variables
     if initialize:
@@ -296,27 +303,52 @@ def train(sess, training_set, validation_set=None,
             X_data, y_data, batch_size=batch_size,
             shuffle=shuffle)
         avg_loss = 0.0
+        avg_acc = 0.0
         for i, (batch_x, batch_y) in enumerate(batch_gen):
             feed = {'tf_x:0': batch_x,
                     'tf_y:0': batch_y,
                     'fc_keep_prob:0': dropout}
-            loss, _ = sess.run(
-                ['cross_entropy_loss:0', 'train_op'],
+            loss, acc, _ = sess.run(
+                ['cross_entropy_loss:0', 'accuracy:0','train_op'],
                 feed_dict=feed)
+            avg_acc += acc
             avg_loss += loss
 
-        training_loss.append(avg_loss / (i + 1))
-        print('Epoch %02d Training Avg. Loss: %7.3f' % (
-            epoch, avg_loss), end=' ')
-        if validation_set is not None:
-            feed = {'tf_x:0': validation_set[0],
+
+        feed_val = {'tf_x:0': validation_set[0],
                     'tf_y:0': validation_set[1],
                     'fc_keep_prob:0': 1.0}
-            valid_acc = sess.run('accuracy:0', feed_dict=feed)
-            print(' Validation Acc: %7.3f' % valid_acc)
-        else:
-            print()
+        feed_test = {'tf_x:0': testing_set[0],
+                     'tf_y:0': testing_set[1],
+                     'fc_keep_prob:0': 1.0}
 
+        # training acc
+        training_acc.append(avg_acc / (i + 1))
+        # validation acc
+        validation_acc.append(sess.run('accuracy:0', feed_dict=feed_val))
+        # testing acc
+        testing_acc.append(sess.run('accuracy:0', feed_dict=feed_test))
+
+
+        # trainingg loss 구하기
+        training_loss.append(avg_loss / (i + 1))
+
+        # validation loss 구하기
+        validation_loss.append(
+            sess.run('cross_entropy_loss:0',feed_dict=feed_val)
+        )
+
+        # testing loss 구하기
+        testing_loss.append(
+            sess.run('cross_entropy_loss:0', feed_dict=feed_test)
+        )
+
+        print('Epoch %02d ####################################################### \n' % (epoch), end=' ')
+        print('Train_loss : %7.3f | Valid_loss : %7.3f | Test_loss : %7.3f\n' % (
+        training_loss[-1], validation_loss[-1], testing_loss[-1]))
+        print('Train_acc :  %7.3f | Valid_acc : %7.3f | Test_acc : %7.3f\n' % (
+            training_acc[-1], validation_acc[-1], testing_acc[-1]))
+    return [training_acc, validation_acc, testing_acc, training_loss, validation_loss, testing_loss]
 
 def predict(sess, X_test, return_proba=False):
     feed = {'tf_x:0': X_test,
@@ -343,7 +375,7 @@ param_batch = [1,4,16,64,128,1024,55000]
 ## Define fixed hyperparameters
 learning_rate = 1e-4
 random_seed = 123
-epoch = 6
+epoch = 5
 
 np.random.seed(random_seed)
 
@@ -352,59 +384,37 @@ np.random.seed(random_seed)
 ######################################################################################
 
 
+
 ## create a graph
 g = tf.Graph()
 with g.as_default():
     tf.set_random_seed(random_seed)
     ## build the graph
     build_cnn(LnReg = 0, LnBeta = 0)
-    ## saver:
-    saver = tf.train.Saver()
 
 ## crearte a TF session and train the CNN model
-
 with tf.Session(graph=g) as sess:
-    train(sess,
-          training_set=(X_train_centered, y_train),
-          validation_set=(X_valid_centered, y_valid),
-          initialize=True,
-          epochs=epoch,
-          shuffle=True,
-          dropout=0.5,
-          batch_size=64,
-          random_seed=123)
-    save(saver, sess, epoch=epoch)
+    [acc_train, acc_valid, acc_test, cost_train, cost_valid, cost_test] \
+        = train(sess,
+                training_set=(X_train_centered, y_train),
+                validation_set=(X_valid_centered, y_valid),
+                testing_set=(X_test_centered, y_test),
+                initialize=True,
+                epochs=epoch,
+                shuffle=True,
+                dropout=0.5,
+                batch_size=64,
+                random_seed=123)
 
 
 
-### Calculate prediction accuracy
-### on test set
-### restoring the saved model
+fig = plt.figure(figsize=(20,20))
+fig.patch.set_facecolor('lightcyan')
 
-for i in range(5):
-    del g
+ax = fig.subplots(2,3)
 
-    ## create a new graph
-    ## and build the model
-    g = tf.Graph()
-    with g.as_default():
-        tf.set_random_seed(random_seed)
-        ## build the graph
-        build_cnn()
 
-        ## saver:
-        saver = tf.train.Saver()
-
-    ## create a new session
-    ## and restore the model
-    with tf.Session(graph=g) as sess:
-        load(saver, sess,
-             epoch=i+1, path='./model/')
-
-        preds = predict(sess, X_test_centered,
-                        return_proba=False)
-
-        print('Test Accuracy: %.3f%%' % (100 * np.sum(preds == y_test) / len(y_test)))
+ax[2,1].
 #
 #
 # ## run the prediction on
